@@ -13,19 +13,19 @@ import java.util.ArrayList;
 public class MessageManager {
 
     // Arrays from the task
-    private ArrayList<String> sentMessages = new ArrayList<>();
-    private ArrayList<String> disregardedMessages = new ArrayList<>();
-    private ArrayList<Message> storedMessages = new ArrayList<>();
-    private ArrayList<String> messageHashes = new ArrayList<>();
-    private ArrayList<String> messageIDs = new ArrayList<>();
+    private final ArrayList<String> sentMessages = new ArrayList<>();
+    private final ArrayList<String> disregardedMessages = new ArrayList<>();
+    private final ArrayList<Message> storedMessages = new ArrayList<>();
+    private final ArrayList<String> messageHashes = new ArrayList<>();
+    private final ArrayList<String> messageIDs = new ArrayList<>();
 
     // Extra parallel arrays so each ID/hash can be matched to its recipient, text and flag
-    private ArrayList<String> recipients = new ArrayList<>();
-    private ArrayList<String> messageTexts = new ArrayList<>();
-    private ArrayList<String> flags = new ArrayList<>();
+    private final ArrayList<String> recipients = new ArrayList<>();
+    private final ArrayList<String> messageTexts = new ArrayList<>();
+    private final ArrayList<String> flags = new ArrayList<>();
 
     // The logged-in user, shown as the sender
-    private String sender;
+    private final String sender;
 
     public MessageManager(String sender) {
         this.sender = sender;
@@ -39,12 +39,11 @@ public class MessageManager {
         messageTexts.add(message.getMessageText());
         flags.add(message.getFlag());
 
-        if (message.getFlag().equals("Sent")) {
-            sentMessages.add(message.getMessageText());
-        } else if (message.getFlag().equals("Disregarded")) {
-            disregardedMessages.add(message.getMessageText());
-        } else if (message.getFlag().equals("Stored")) {
-            storedMessages.add(message);
+        switch (message.getFlag()) {
+            case "Sent" -> sentMessages.add(message.getMessageText());
+            case "Disregarded" -> disregardedMessages.add(message.getMessageText());
+            case "Stored" -> storedMessages.add(message);
+            default -> { }   // no flag yet, so it doesn't go in any of the three arrays
         }
     }
 
@@ -127,18 +126,19 @@ public class MessageManager {
         messageTexts.remove(index);
         flags.remove(index);
 
-        if (flag.equals("Sent")) {
-            sentMessages.remove(text);
-        } else if (flag.equals("Disregarded")) {
-            disregardedMessages.remove(text);
-        } else if (flag.equals("Stored")) {
-            for (int i = 0; i < storedMessages.size(); i++) {
-                if (storedMessages.get(i).getMessageHash().equals(messageHash)) {
-                    storedMessages.remove(i);
-                    break;
+        switch (flag) {
+            case "Sent" -> sentMessages.remove(text);
+            case "Disregarded" -> disregardedMessages.remove(text);
+            case "Stored" -> {
+                for (int i = 0; i < storedMessages.size(); i++) {
+                    if (storedMessages.get(i).getMessageHash().equals(messageHash)) {
+                        storedMessages.remove(i);
+                        break;
+                    }
                 }
+                Message.saveStoredMessages(storedMessages);   // update the JSON file too
             }
-            Message.saveStoredMessages(storedMessages);   // update the JSON file too
+            default -> { }
         }
 
         return "Message: \"" + text + "\" successfully deleted.";

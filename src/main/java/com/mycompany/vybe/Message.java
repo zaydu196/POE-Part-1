@@ -87,7 +87,7 @@ public class Message {
 
     // Hash = first two numbers of the ID : message number : first and last word, all in caps
     // e.g. 00:0:HITONIGHT
-    public String createMessageHash() {
+    public final String createMessageHash() {
         String[] words = messageText.trim().split(" ");
 
         // Removes punctuation like commas and question marks from the words
@@ -102,20 +102,24 @@ public class Message {
     // 1 = Send, 2 = Disregard, 3 = Store
     public String sentMessage(int choice) {
         switch (choice) {
-            case 1:
+            case 1 -> {
                 flag = "Sent";
                 sentMessages.add(this);
                 totalMessagesSent++;
                 return "Message successfully sent.";
-            case 2:
+            }
+            case 2 -> {
                 flag = "Disregarded";
                 return "Press 0 to delete the message.";
-            case 3:
+            }
+            case 3 -> {
                 flag = "Stored";
                 storeMessage();
                 return "Message successfully stored.";
-            default:
+            }
+            default -> {
                 return "Invalid option, please choose 1, 2 or 3.";
+            }
         }
     }
 
@@ -220,13 +224,14 @@ public class Message {
 
     // Turns this message into a JSON object
     private String toJson() {
-        return "  {\n"
-                + "    \"messageID\": \"" + messageID + "\",\n"
-                + "    \"messageNumber\": " + messageNumber + ",\n"
-                + "    \"messageHash\": \"" + messageHash + "\",\n"
-                + "    \"recipient\": \"" + recipient + "\",\n"
-                + "    \"message\": \"" + messageText.replace("\"", "\\\"") + "\"\n"
-                + "  }";
+        return """
+                  {
+                    "messageID": "%s",
+                    "messageNumber": %d,
+                    "messageHash": "%s",
+                    "recipient": "%s",
+                    "message": "%s"
+                  }""".formatted(messageID, messageNumber, messageHash, recipient, messageText.replace("\"", "\\\""));
     }
 
     // Full details in the order: Message ID, Message Hash, Recipient, Message
