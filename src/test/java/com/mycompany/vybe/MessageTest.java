@@ -1,5 +1,6 @@
 package com.mycompany.vybe;
 
+import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -12,6 +13,12 @@ public class MessageTest {
     // Test data from the task
     Message message1 = new Message("0012345678", 0, "+27718693002", "Hi Mike, can you join us for dinner tonight?");
     Message message2 = new Message("0098765432", 1, "08575975889", "Hi Keegan, did you receive the payment?");
+
+    // Store messages in a test JSON file so the real storedMessages.json isn't changed
+    @Before
+    public void setUp() {
+        Message.setFileName("testStoredMessages.json");
+    }
 
     // ---------- Message length ----------
 
