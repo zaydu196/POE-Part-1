@@ -106,6 +106,16 @@ public class Login {
         return enteredUsername.equals(username) && enteredPassword.equals(password);
     }
 
+    // Returns the user's full name (used as the sender of messages in Part 3)
+    public String getFullName() {
+        return firstName + " " + lastName;
+    }
+
+    // Returns the user's cell phone number
+    public String getCellPhoneNumber() {
+        return cellPhoneNumber;
+    }
+
     // Returns the welcome message or the error message
     public String returnLoginStatus(boolean loggedIn) {
         if (loggedIn) {
