@@ -1,14 +1,18 @@
 package com.mycompany.vybe;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.Scanner;
 
 /*
  * Message class
- * Holds the details of one message (ID, number, recipient, text and hash)
- * and keeps track of all the messages that were sent or stored while the app is running.
+ * Holds the details of one message (ID, number, recipient, text, hash and flag),
+ * keeps track of the messages sent while the app is running,
+ * and saves stored messages to (and reads them from) a JSON file.
  */
 public class Message {
 
@@ -18,11 +22,12 @@ public class Message {
     private String recipient;
     private String messageText;
     private String messageHash;
+    private String flag = "";   // "Sent", "Disregarded" or "Stored" once the user chooses
 
     // Shared by all messages
     private static ArrayList<Message> sentMessages = new ArrayList<>();
-    private static ArrayList<Message> storedMessages = new ArrayList<>();
     private static int totalMessagesSent = 0;
+    private static String fileName = "storedMessages.json";
 
     // Creates a message with a randomly generated message ID
     public Message(int messageNumber, String recipient, String messageText) {
@@ -98,12 +103,15 @@ public class Message {
     public String sentMessage(int choice) {
         switch (choice) {
             case 1:
+                flag = "Sent";
                 sentMessages.add(this);
                 totalMessagesSent++;
                 return "Message successfully sent.";
             case 2:
+                flag = "Disregarded";
                 return "Press 0 to delete the message.";
             case 3:
+                flag = "Stored";
                 storeMessage();
                 return "Message successfully stored.";
             default:
@@ -130,10 +138,15 @@ public class Message {
         return totalMessagesSent;
     }
 
-    // Adds the message to the stored list and saves all stored messages to a JSON file
+    // Adds this message to the JSON file, keeping the messages that were already stored there
     public void storeMessage() {
+        ArrayList<Message> storedMessages = readStoredMessages();
         storedMessages.add(this);
+        saveStoredMessages(storedMessages);
+    }
 
+    // Writes a list of messages to the JSON file (also used after a stored message is deleted)
+    public static void saveStoredMessages(ArrayList<Message> storedMessages) {
         String json = "[\n";
         for (int i = 0; i < storedMessages.size(); i++) {
             json += storedMessages.get(i).toJson();
@@ -146,17 +159,70 @@ public class Message {
         }
         json += "]";
 
-        try (FileWriter writer = new FileWriter("storedMessages.json")) {
+        try (FileWriter writer = new FileWriter(fileName)) {
             writer.write(json);
         } catch (IOException e) {
             System.out.println("Error saving message: " + e.getMessage());
         }
     }
 
+    // Reads the JSON file back into a list of messages, one field per line
+    // File reading with Scanner adapted from W3Schools (n.d.)
+    public static ArrayList<Message> readStoredMessages() {
+        ArrayList<Message> storedMessages = new ArrayList<>();
+        File file = new File(fileName);
+
+        if (!file.exists()) {
+            return storedMessages;   // nothing has been stored yet
+        }
+
+        String id = "";
+        int number = 0;
+        String recipient = "";
+
+        try (Scanner reader = new Scanner(file)) {
+            while (reader.hasNextLine()) {
+                String line = reader.nextLine().trim();
+
+                if (line.startsWith("\"messageID\"")) {
+                    id = getJsonValue(line);
+                } else if (line.startsWith("\"messageNumber\"")) {
+                    number = Integer.parseInt(getJsonValue(line));
+                } else if (line.startsWith("\"recipient\"")) {
+                    recipient = getJsonValue(line);
+                } else if (line.startsWith("\"message\"")) {
+                    // "message" is the last field, so the message is complete here
+                    Message message = new Message(id, number, recipient, getJsonValue(line));
+                    message.flag = "Stored";
+                    storedMessages.add(message);
+                }
+            }
+        } catch (FileNotFoundException e) {
+            System.out.println("Error reading stored messages: " + e.getMessage());
+        }
+
+        return storedMessages;
+    }
+
+    // Takes a line like  "recipient": "+27718693002",  and returns  +27718693002
+    private static String getJsonValue(String line) {
+        String value = line.substring(line.indexOf(":") + 1).trim();
+
+        if (value.endsWith(",")) {
+            value = value.substring(0, value.length() - 1);   // remove the comma at the end
+        }
+        if (value.startsWith("\"")) {
+            value = value.substring(1, value.length() - 1);   // remove the quotes around it
+        }
+
+        return value.replace("\\\"", "\"");   // turn \" back into "
+    }
+
     // Turns this message into a JSON object
     private String toJson() {
         return "  {\n"
                 + "    \"messageID\": \"" + messageID + "\",\n"
+                + "    \"messageNumber\": " + messageNumber + ",\n"
                 + "    \"messageHash\": \"" + messageHash + "\",\n"
                 + "    \"recipient\": \"" + recipient + "\",\n"
                 + "    \"message\": \"" + messageText.replace("\"", "\\\"") + "\"\n"
@@ -177,5 +243,22 @@ public class Message {
 
     public String getMessageHash() {
         return messageHash;
+    }
+
+    public String getRecipient() {
+        return recipient;
+    }
+
+    public String getMessageText() {
+        return messageText;
+    }
+
+    public String getFlag() {
+        return flag;
+    }
+
+    // Lets the unit tests use their own JSON file so the real one isn't touched
+    public static void setFileName(String newFileName) {
+        fileName = newFileName;
     }
 }
