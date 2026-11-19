@@ -1,11 +1,12 @@
 package com.mycompany.vybe;
 
+import java.util.ArrayList;
 import java.util.Scanner;
 
 /*
  * Vybe class
  * Main class of the app. Lets the user create an account, log in,
- * and then send messages through QuickChat.
+ * send messages through QuickChat, and manage their stored messages.
  */
 public class Vybe {
 
@@ -57,6 +58,10 @@ public class Vybe {
         // ===== Part 2: QuickChat (only reached once the user has logged in) =====
         System.out.println("Welcome to QuickChat.");
 
+        // Part 3: the arrays of messages, starting with any messages stored in the JSON file
+        MessageManager manager = new MessageManager(login.getFullName() + " (" + login.getCellPhoneNumber() + ")");
+        manager.loadStoredMessages();
+
         System.out.print("How many messages would you like to send? ");
         int numMessages = readNumber(input);
 
@@ -69,6 +74,7 @@ public class Vybe {
             System.out.println("1) Send Messages");
             System.out.println("2) Show recently sent messages");
             System.out.println("3) Quit");
+            System.out.println("4) Stored Messages");
             System.out.print("Choose an option: ");
             option = readNumber(input);
 
@@ -98,6 +104,7 @@ public class Vybe {
                         }
 
                         System.out.println(message.sentMessage(choice));
+                        manager.addMessage(message);
 
                         if (choice == 1) {
                             System.out.println(message.getMessageDetails());
@@ -105,7 +112,7 @@ public class Vybe {
                             while (!input.nextLine().equals("0")) {
                                 System.out.println("Press 0 to delete the message.");
                             }
-                            System.out.println("Message deleted.");
+                            System.out.println("Message disregarded.");
                         }
 
                         messagesEntered++;
@@ -114,17 +121,74 @@ public class Vybe {
                     System.out.println("Total number of messages sent: " + Message.returnTotalMessages());
                     break;
                 case 2:
-                    System.out.println("Coming Soon.");
+                    System.out.println(Message.printMessages());
                     break;
                 case 3:
                     System.out.println("Goodbye!");
                     break;
+                case 4:
+                    storedMessagesMenu(input, manager);
+                    break;
                 default:
-                    System.out.println("Invalid option, please choose 1, 2 or 3.");
+                    System.out.println("Invalid option, please choose 1, 2, 3 or 4.");
             }
         }
 
         input.close();
+    }
+
+    // Part 3: the Stored Messages menu, which keeps showing until the user goes back
+    public static void storedMessagesMenu(Scanner input, MessageManager manager) {
+        int option = 0;
+
+        while (option != 7) {
+            System.out.println();
+            System.out.println("--- Stored Messages ---");
+            System.out.println("1) Display the sender and recipient of all stored messages");
+            System.out.println("2) Display the longest stored message");
+            System.out.println("3) Search for a message ID");
+            System.out.println("4) Search for all messages to a recipient");
+            System.out.println("5) Delete a message using its message hash");
+            System.out.println("6) Display a report of all messages");
+            System.out.println("7) Back to main menu");
+            System.out.print("Choose an option: ");
+            option = readNumber(input);
+
+            switch (option) {
+                case 1:
+                    System.out.println(manager.displaySenderAndRecipients());
+                    break;
+                case 2:
+                    System.out.println("Longest stored message: " + manager.getLongestMessage());
+                    break;
+                case 3:
+                    System.out.print("Enter the message ID: ");
+                    System.out.println(manager.searchByMessageID(input.nextLine().trim()));
+                    break;
+                case 4:
+                    System.out.print("Enter the recipient's cell number: ");
+                    ArrayList<String> results = manager.searchByRecipient(input.nextLine().trim());
+
+                    if (results.isEmpty()) {
+                        System.out.println("No messages found for that recipient.");
+                    }
+                    for (String text : results) {
+                        System.out.println("\"" + text + "\"");
+                    }
+                    break;
+                case 5:
+                    System.out.print("Enter the message hash: ");
+                    System.out.println(manager.deleteByHash(input.nextLine().trim().toUpperCase()));
+                    break;
+                case 6:
+                    System.out.println(manager.displayReport());
+                    break;
+                case 7:
+                    break;   // goes back to the main menu
+                default:
+                    System.out.println("Invalid option, please choose 1 to 7.");
+            }
+        }
     }
 
     // Asks for the recipient and message until both are correct, then returns the message
